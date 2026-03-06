@@ -4,7 +4,7 @@ pipeline {
     environment {
         // This will create three environment variables:
         // ENV_CREDS (username:password), ENV_CREDS_USR (username), and ENV_CREDS_PSW (password)
-        ENV_CREDS = credentials('my-secret-creds') 
+        ENV_CREDS = credentials('newuser') 
     }
     
     stages {
