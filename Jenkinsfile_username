@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+    
+    environment {
+        // This will create three environment variables:
+        // ENV_CREDS (username:password), ENV_CREDS_USR (username), and ENV_CREDS_PSW (password)
+        ENV_CREDS = credentials('my-secret-creds') 
+    }
+    
+    stages {
+        stage('Print Credentials') {
+            steps {
+                // Accessing the username
+                sh 'echo "Username: $ENV_CREDS_USR"'
+                
+                // Accessing the password (will be masked as **** in the console output)
+                sh 'echo "Password: $ENV_CREDS_PSW"'
+                
+                // Accessing the combined username:password
+                sh 'echo "Combined: $ENV_CREDS"' 
+            }
+        }
+    }
+}
