@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "nginx:latest"
+        K8S_MANIFEST = "k8s/nginx-deployment.yaml"
+    }
+
+    stages {
+
+        stage('Pull Docker Image') {
+            steps {
+                sh """
+                    docker pull ${IMAGE_NAME}
+                """
+            }
+        }
+
+        stage('Verify Cluster Access') {
+            steps {
+                sh '''
+                    kubectl cluster-info
+                    kubectl get nodes
+                '''
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh """
+                    kubectl apply -f ${K8S_MANIFEST}
+                """
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    kubectl rollout status deployment/nginx-deployment -n default
+                    kubectl get deployments -n default
+                    kubectl get pods -n default
+                    kubectl get svc nginx-service -n default
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Nginx deployment completed successfully.'
+        }
+
+        failure {
+            echo 'Nginx deployment failed.'
+        }
+    }
+}
