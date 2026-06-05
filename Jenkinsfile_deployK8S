@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "nginx:latest"
-        K8S_MANIFEST = "k8s/nginx-deployment.yaml"
+        K8S_MANIFEST = "deployment.yml"
     }
 
     stages {
