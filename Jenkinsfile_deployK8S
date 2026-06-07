@@ -3,55 +3,50 @@ pipeline {
 
     environment {
         IMAGE_NAME = "nginx:latest"
-        K8S_MANIFEST = "deployment.yml"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        GIT_REPO   = "https://github.com/suneeta989/Jenkins_Pipeline.git"
+        GIT_BRANCH = "main"
     }
 
     stages {
 
-        stage('Pull Docker Image') {
+        stage('Checkout Manifest Repository') {
+            steps {
+                git branch: "${main}",
+                    url: "${GIT_REPO}"
+            }
+        }
+
+        stage('Update Deployment Manifest') {
             steps {
                 sh """
-                    docker pull ${IMAGE_NAME}
+                sed -i 's|image: .*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g' deployment.yml
+                cat deployment.yml
                 """
             }
         }
 
-        stage('Verify Cluster Access') {
+        stage('Commit Changes') {
             steps {
-                sh '''
-                    kubectl cluster-info
-                    kubectl get nodes
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'github-creds',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_TOKEN'
+                    )
+                ]) {
+                    sh """
+                    git config user.email "suneeta.dharwadkar11@gmail.com"
+                    git config user.name "suneeta989"
+
+                    git add deployment.yml
+                    git commit -m "Update image to ${IMAGE_TAG}" || true
+
+                    git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/suneeta989/Jenkins_Pipeline.git
+                    git push origin ${GIT_BRANCH}
+                    """
+                }
             }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh """
-                    kubectl apply -f ${K8S_MANIFEST}
-                """
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh '''
-                    kubectl rollout status deployment/nginx-deployment -n default
-                    kubectl get deployments -n default
-                    kubectl get pods -n default
-                    kubectl get svc nginx-service -n default
-                '''
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Nginx deployment completed successfully.'
-        }
-
-        failure {
-            echo 'Nginx deployment failed.'
         }
     }
 }
